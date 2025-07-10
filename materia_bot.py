@@ -2,6 +2,23 @@ import random
 import json
 import os
 from collections import defaultdict, Counter
+from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+
+DB_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+engine = create_engine(DB_URL)
+Session = sessionmaker(bind=engine)
+Base = declarative_base()
+
+class MateriaInventory(Base):
+    __tablename__ = 'inventory'
+    user_name = Column(String, primary_key=True)
+    materia_name = Column(String, primary_key=True)
+    count = Column(Integer, default=1)
+
+Base.metadata.create_all(engine)
 
 # Materia categories with weighted choices
 materia = {
@@ -71,14 +88,23 @@ def handle_redemption(user_name, reward_title):
 
     category = reward_to_category[reward_title]
     materia_won = pick_materia(category)
-    accounts[user_name][materia_won] += 1
-    save_accounts(accounts)
 
-    count = accounts[user_name][materia_won]
-    status = "first time!" if count == 1 else f"now owns x{count}"
+    session = Session()
+    existing = session.query(MateriaInventory).filter_by(user_name=user_name, materia_name=materia_won).first()
+
+    if existing:
+        existing.count += 1
+        status = f"now owns x{existing.count}"
+    else:
+        new_entry = MateriaInventory(user_name=user_name, materia_name=materia_won, count=1)
+        session.add(new_entry)
+        status = "first time!"
+
+    session.commit()
+    session.close()
+
     print(f"✅ {user_name} redeemed {reward_title} → got: {materia_won} ({status})")
-
-    return materia_won, count
+    return materia_won, existing.count if existing else 1
 
 # 🧪 Command-line test loop
 if __name__ == "__main__":
