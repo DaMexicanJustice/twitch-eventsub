@@ -20,7 +20,7 @@ payload = {
     },
     "transport": {
         "method": "webhook",
-        "callback": "https://9376248c37d7.ngrok-free.app/webhook",
+        "callback": "https://twitch-eventsub.onrender.com/webhook",
         "secret": os.getenv("my_secret")
     }
 }
