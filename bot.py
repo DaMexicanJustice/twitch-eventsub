@@ -3,7 +3,7 @@ import asyncio
 from dotenv import load_dotenv
 from twitchio.ext import commands
 from sqlalchemy import create_engine, Column, String, Integer, select
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Load .env config
@@ -48,7 +48,7 @@ class TwitchBot(commands.Bot):
 
     async def event_ready(self):
         print('✅ Bot is ready and connected')
-        self.loop.create_task(self.poll_redemptions())
+        asyncio.create_task(self.poll_redemptions())
 
     async def event_message(self, message):
         if message.echo:
