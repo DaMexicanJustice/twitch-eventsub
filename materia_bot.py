@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import bot
+import asyncio
 
 DB_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 engine = create_engine(DB_URL)
@@ -103,8 +104,8 @@ async def handle_redemption(user_name, reward_title):
 
     session.commit()
     session.close()
-    
-    message = f"{user} just redeemed: {reward} 🔥"
+
+    message = f"{user_name} just redeemed: {reward_title} 🔥"
     await bot_instance.send_custom_message(message)
 
     print(f"✅ {user_name} redeemed {reward_title} → got: {materia_won} ({status})")
@@ -115,6 +116,6 @@ if __name__ == "__main__":
     while True:
         user = input("User name: ")
         reward = input("Reward title: ")
-        handle_redemption(user, reward)
+        asyncio.run(handle_redemption(user, reward))
 
         print(f"{user}'s inventory: {dict(accounts[user])}")
