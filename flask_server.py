@@ -5,6 +5,7 @@ import json
 from dotenv import load_dotenv
 import os
 import materia_bot
+import bot
 
 load_dotenv()
 TWITCH_SECRET = os.getenv('my_secret')
@@ -52,3 +53,9 @@ def webhook():
 if __name__ == '__main__':
     import payload  # auto-register when deployed
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # Start the bot in a separate thread
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.daemon = True
+    bot_thread.start()
+
+    

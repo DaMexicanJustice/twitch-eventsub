@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+import bot
 
 DB_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 engine = create_engine(DB_URL)
@@ -81,7 +82,7 @@ def pick_materia(category):
     items, weights = zip(*materia[category])
     return random.choices(items, weights=weights, k=1)[0]
 
-def handle_redemption(user_name, reward_title):
+async def handle_redemption(user_name, reward_title):
     if reward_title not in reward_to_category:
         print(f"❌ Unknown reward: {reward_title}")
         return None
@@ -102,6 +103,9 @@ def handle_redemption(user_name, reward_title):
 
     session.commit()
     session.close()
+    
+    message = f"{user} just redeemed: {reward} 🔥"
+    await bot_instance.send_custom_message(message)
 
     print(f"✅ {user_name} redeemed {reward_title} → got: {materia_won} ({status})")
     return materia_won, existing.count if existing else 1

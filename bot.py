@@ -41,6 +41,8 @@ class TwitchBot(commands.Bot):
         if chan:
             await chan.send(message)
 
+# Create a single global bot instance
+bot_instance = TwitchBot()
+
 if __name__ == '__main__':
-    bot = TwitchBot()
-    bot.run()
+    bot_instance.run()
