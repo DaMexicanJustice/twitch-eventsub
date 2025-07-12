@@ -1,10 +1,12 @@
 import os
 import asyncio
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from twitchio.ext import commands
-from sqlalchemy import create_engine, Column, String, Integer, select
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, select
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import datetime, UTC
+from sqlalchemy import func
 
 # Load .env config
 load_dotenv()
@@ -22,17 +24,15 @@ engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# MateriaInventory table
+# MateriaInventory table with timestamp
 class MateriaInventory(Base):
     __tablename__ = 'inventory'
     user_name = Column(String, primary_key=True)
     materia_name = Column(String, primary_key=True)
     count = Column(Integer, default=1)
+    redeemed_at = Column(DateTime(timezone=True), server_default=func.now())
 
 Base.metadata.create_all(engine)
-
-# 🔄 Track which entries have already been announced
-announced = set()
 
 class TwitchBot(commands.Bot):
 
@@ -48,7 +48,7 @@ class TwitchBot(commands.Bot):
 
     async def event_ready(self):
         print('✅ Bot is ready and connected')
-        asyncio.create_task(self.poll_redemptions())
+        asyncio.create_task(self.poll_recent_redemptions())
 
     async def event_message(self, message):
         if message.echo:
@@ -59,26 +59,35 @@ class TwitchBot(commands.Bot):
     async def greet(self, ctx):
         await ctx.send(f'👋 Hello {ctx.author.name}, welcome to #{CHANNEL}!')
 
-    async def poll_redemptions(self):
+    async def poll_recent_redemptions(self):
+        cooldown_window = timedelta(minutes=10)
+        announced = set()
+
         while True:
             try:
                 session = Session()
-                result = session.execute(select(MateriaInventory)).scalars().all()
+                cutoff = datetime.now() - cooldown_window
+
+                result = session.execute(
+                    select(MateriaInventory).where(MateriaInventory.redeemed_at >= cutoff)
+                ).scalars().all()
+
                 for entry in result:
                     key = (entry.user_name, entry.materia_name, entry.count)
                     if key not in announced:
                         msg = f"🎁 @{entry.user_name} received {entry.materia_name} — now owns x{entry.count}!"
                         await self.send_custom_message(msg)
                         announced.add(key)
+
                 session.close()
             except Exception as e:
                 print(f"❌ Error polling: {e}")
-            await asyncio.sleep(10)  # Poll every 10 seconds
+
+            await asyncio.sleep(10)
 
     async def send_custom_message(self, message):
-        chan = self.get_channel(CHANNEL)
-        if chan:
-            await chan.send(message)
+        if self.connected_channels:
+            await self.connected_channels[0].send(message)
 
 def run():
     bot = TwitchBot()

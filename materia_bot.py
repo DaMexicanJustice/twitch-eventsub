@@ -2,20 +2,23 @@ import random
 import json
 import os
 from collections import defaultdict, Counter
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import DateTime, create_engine, Column, String, Integer, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
 
 DB_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
+# MateriaInventory table with timestamp
 class MateriaInventory(Base):
     __tablename__ = 'inventory'
     user_name = Column(String, primary_key=True)
     materia_name = Column(String, primary_key=True)
     count = Column(Integer, default=1)
+    redeemed_at = Column(DateTime(timezone=True), server_default=func.now())
 
 Base.metadata.create_all(engine)
 

@@ -4,13 +4,7 @@ import hashlib
 import json
 from dotenv import load_dotenv
 import os
-import materia_bot
-import bot
-import threading
-
-def run_bot():
-    bot.bot_instance.run()  # Assuming bot.py exposes bot_instance
-
+import materia_bot  # Assuming this contains your bot logic
 
 load_dotenv()
 TWITCH_SECRET = os.getenv('my_secret')
@@ -26,12 +20,15 @@ def webhook():
     message_signature = request.headers.get('Twitch-Eventsub-Message-Signature')
     body = request.data.decode('utf-8')
     hmac_message = message_id + timestamp + body
+
     if TWITCH_SECRET is None:
         print("⚠️ TWITCH_SECRET is not set! Check your .env file.")
         return 'Server misconfiguration', 500
+
     my_signature = 'sha256=' + hmac.new(
         TWITCH_SECRET.encode(), hmac_message.encode(), hashlib.sha256
     ).hexdigest()
+
     if not hmac.compare_digest(my_signature, message_signature):
         return 'Invalid signature', 403
 
@@ -49,21 +46,14 @@ def webhook():
         user = event['user_name']
         reward = event['reward']['title']
         print(f"✅ {user} redeemed: {reward}")
-        # Call your handle_redemption here:
         materia_bot.handle_redemption(user, reward)
 
     return '', 204
 
+def run_custom_bot():
+    materia_bot.run()  # Replace this with whatever function starts your bot
 
 if __name__ == '__main__':
     import payload  # auto-register when deployed
-
-    # Start the bot in a separate thread FIRST
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.daemon = True
-    bot_thread.start()
-
     # Then start Flask
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-    
