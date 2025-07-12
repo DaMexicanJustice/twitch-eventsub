@@ -91,7 +91,7 @@ class TwitchBot(commands.Bot):
 
 def run():
     bot = TwitchBot()
-    bot.run(with_adapter=False)
+    bot.run()
 
 if __name__ == '__main__':
     run()
