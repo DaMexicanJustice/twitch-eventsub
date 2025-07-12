@@ -5,6 +5,7 @@ from collections import defaultdict, Counter
 from sqlalchemy import DateTime, create_engine, Column, String, Integer, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from datetime import datetime
 
 
 DB_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
@@ -92,13 +93,24 @@ def handle_redemption(user_name, reward_title):
     materia_won = pick_materia(category)
 
     session = Session()
-    existing = session.query(MateriaInventory).filter_by(user_name=user_name, materia_name=materia_won).first()
+    existing = session.query(MateriaInventory).filter_by(
+        user_name=user_name,
+        materia_name=materia_won
+    ).first()
+
+    current_time = datetime.utcnow()
 
     if existing:
         existing.count += 1
+        existing.redeemed_at = current_time  # 💫 Update timestamp
         status = f"now owns x{existing.count}"
     else:
-        new_entry = MateriaInventory(user_name=user_name, materia_name=materia_won, count=1)
+        new_entry = MateriaInventory(
+            user_name=user_name,
+            materia_name=materia_won,
+            count=1,
+            redeemed_at=current_time  # 💫 Set timestamp for new entry
+        )
         session.add(new_entry)
         status = "first time!"
 
@@ -107,6 +119,7 @@ def handle_redemption(user_name, reward_title):
 
     print(f"✅ {user_name} redeemed {reward_title} → got: {materia_won} ({status})")
     return materia_won, existing.count if existing else 1
+
 
 # 🧪 Command-line test loop
 if __name__ == "__main__":
