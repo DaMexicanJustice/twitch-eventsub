@@ -3,5 +3,5 @@ python-dotenv
 requests
 psycopg2-binary
 SQLAlchemy
-twitchio
+twitchio==3.0.1
 asyncio
