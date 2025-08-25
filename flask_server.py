@@ -11,6 +11,11 @@ TWITCH_SECRET = os.getenv('my_secret')
 
 app = Flask(__name__)
 
+# Map Twitch rewards to Materia categories
+reward_to_category = {
+    "Redeem Become a Final Fantasy card": "Card",
+}
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     print("reached")
@@ -46,12 +51,9 @@ def webhook():
         user = event['user_name']
         reward = event['reward']['title']
         print(f"✅ {user} redeemed: {reward}")
-        materia_bot.handle_redemption(user, reward)
+        materia_bot.handle_materia_redemption(user, reward)
 
     return '', 204
-
-def run_custom_bot():
-    materia_bot.run()  # Replace this with whatever function starts your bot
 
 if __name__ == '__main__':
     import payload  # auto-register when deployed
